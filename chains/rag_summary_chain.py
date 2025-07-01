@@ -1,17 +1,22 @@
 from langchain_core.prompts import PromptTemplate
-from langchain_core.runnables import RunnableMap, RunnablePassthrough
+from langchain_core.runnables import RunnableMap
 from models.ollama_llm import get_llm
 
 def get_rag_summary_chain():
-    prompt_template = """You are a legal expert AI tasked with summarizing Indian court case judgments.
-Use the provided context from the legal document to generate a concise summary, including:
-- Parties involved
-- Court name and jurisdiction
-- Legal issue
-- Verdict
-- Summary in plain English
+    prompt_template = """
+You are a legal expert AI summarizer. Based on the following legal context, generate a clear, structured case summary with markdown formatting. Your response must follow this format:
 
-If the context is unclear or missing critical information, say "Insufficient information."
+---
+
+- 🧑‍⚖️ **Parties Involved**: ...
+- 🏛️ **Court Name & Jurisdiction**: ...
+- 📌 **Legal Issues Discussed**: ...
+- ⚖️ **Final Verdict or Judgment**: ...
+- 🗣️ **Plain English Summary**: ...
+
+---
+
+If any information is not available, write "Not specified" for that section.
 
 Context:
 {context}

@@ -9,7 +9,6 @@ from chains.rag_summary_chain import get_rag_summary_chain
 st.set_page_config(page_title="Legal Case Analyzer", layout="wide")
 
 # --- Sidebar Navigation ---
-# --- Sidebar Navigation ---
 with st.sidebar:
     st.markdown("## 🌟 Navigation")
     st.markdown("1. [Upload PDF(s)](#upload-one-or-more-legal-case-pdfs)")
@@ -18,7 +17,6 @@ with st.sidebar:
     st.markdown("4. [Download](#download-options)")
     st.markdown("---")
     st.markdown("📌 Built with ❤️ using Streamlit")
-
 
 # --- Title ---
 st.markdown("## 🧾 Legal Document Analyzer & Case Summary Generator")
@@ -90,7 +88,8 @@ if uploaded_files:
                 st.download_button("⬇ Download Extracted Text", extracted_text, file_name=f"{uploaded_file.name}_extracted.txt")
                 st.download_button("⬇ Download Case Summary", summary, file_name=f"{uploaded_file.name}_summary.txt")
 
-        # --- Summary Output ---
+        # --- Case Summary Output ---
         with st.expander("🧠 Case Summary", expanded=True):
+            # Highlight and render markdown with HTML styling
             highlighted_summary = highlight_keywords(summary)
             st.markdown(highlighted_summary, unsafe_allow_html=True)
