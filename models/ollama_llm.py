@@ -1,4 +1,4 @@
-from langchain_community.llms import Ollama
+from langchain_ollama import OllamaLLM  # ✅ NEW correct import
 
 def get_llm(model_name="mistral"):
-    return Ollama(model=model_name)
+    return OllamaLLM(model=model_name)

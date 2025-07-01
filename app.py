@@ -1,10 +1,11 @@
 import streamlit as st
 import tempfile
 from utils.pdf_loader import extract_text_from_pdf, extract_metadata
-from chains.case_summary_chain import get_case_summary_chain
 from utils.highlight import highlight_keywords
+from retriever.vector_store import create_vector_store_and_retriever
+from chains.rag_summary_chain import get_rag_summary_chain
 
-# Page config
+# --- Page Config ---
 st.set_page_config(page_title="Legal Case Analyzer", layout="wide")
 
 # --- Sidebar Navigation ---
@@ -18,7 +19,7 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("📌 Built with ❤️ using Streamlit")
 
-# Title
+# --- Title ---
 st.markdown("## 🧾 Legal Document Analyzer & Case Summary Generator")
 
 # --- File Uploader ---
@@ -37,23 +38,33 @@ if uploaded_file:
         st.stop()
 
     if extracted_text.strip():
-        # Show uploaded file name
         st.markdown(f"📄 **{uploaded_file.name}**")
 
-        # Spinner while analyzing
-        with st.spinner("🔍 Analyzing document..."):
-            # Run summary chain
-            summary_chain = get_case_summary_chain()
+        with st.spinner("🔍 Analyzing document using RAG..."):
             try:
-                summary = summary_chain.run(extracted_text)
+                # Step 1: Create Retriever
+                retriever = create_vector_store_and_retriever(extracted_text)
+                docs = retriever.invoke("Summarize this legal case")
+                context = "\n\n".join([doc.page_content for doc in docs])
+
+                # Step 2: Get RAG summary chain and invoke with required keys
+                summary_chain = get_rag_summary_chain()
+                response = summary_chain.invoke({
+                    "context": context,
+                    "query": "Summarize this legal case"
+                })
+
+                # Debug: Show raw response
+                # Step 3: Extract summary safely
+                summary = response if isinstance(response, str) else response.get("result", "No summary generated.")
             except Exception as e:
                 st.error(f"❌ Failed to generate summary: {e}")
                 st.stop()
 
-        # Extract metadata
+        # --- Metadata Extraction ---
         metadata = extract_metadata(extracted_text)
 
-        # --- Display Layout ---
+        # --- Layout ---
         col1, col2 = st.columns([2, 1])
 
         with col1:
@@ -69,7 +80,7 @@ if uploaded_file:
                 st.download_button("⬇ Download Extracted Text", extracted_text, file_name="extracted_text.txt", key="download_text_btn")
                 st.download_button("⬇ Download Case Summary", summary, file_name="case_summary.txt", key="download_summary_btn")
 
-        # --- Case Summary ---
+        # --- Summary Output ---
         with st.expander("🧠 Case Summary", expanded=True):
             highlighted_summary = highlight_keywords(summary)
             st.markdown(highlighted_summary, unsafe_allow_html=True)
