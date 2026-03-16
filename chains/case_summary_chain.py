@@ -1,18 +1,40 @@
-from langchain.prompts import PromptTemplate
-from langchain.chains import LLMChain
-from models.ollama_llm import get_llm
+
+from langchain_core.prompts import PromptTemplate
+from langchain_core.runnables import RunnablePassthrough
+from models.llm import get_llm
 
 def get_case_summary_chain():
+    """
+    Creates a chain for analyzing full case text (non-RAG flow if needed)
+    """
     prompt = PromptTemplate.from_template("""
-You are a legal assistant. Analyze the following legal text and extract:
-1. Parties Involved
-2. Court Name and Jurisdiction
-3. Legal Issue
-4. Verdict
-5. A Summary in plain English
+    You are an expert legal summarizer. 
+    Analyze the full text below and extract key details into a structured JSON-like format (but use Markdown headers).
 
-Legal Text:
-{document}
-""")
-    llm = get_llm()
-    return LLMChain(prompt=prompt, llm=llm)
+    ## Case Information
+    - **Parties**: ...
+    - **Court**: ...
+    - **Date**: ...
+    
+    ## Legal Analysis
+    - **Issue**: [What is the core legal question?]
+    - **Holding**: [Who won and why?]
+    - **Significance**: [Why does this case matter?]
+
+    ## Plain English Summary
+    [2-3 sentences explaining the case simply]
+
+    ---
+    Legal Text:
+    {document}
+    """)
+    
+    llm = get_llm(model_name="llama3-70b-8192", temperature=0)
+    
+    chain = (
+        {"document": RunnablePassthrough()} 
+        | prompt 
+        | llm
+    )
+    
+    return chain

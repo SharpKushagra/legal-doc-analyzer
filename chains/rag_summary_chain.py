@@ -1,36 +1,43 @@
+
 from langchain_core.prompts import PromptTemplate
 from langchain_core.runnables import RunnableMap
-from models.ollama_llm import get_llm
+from models.llm import get_llm
 
 def get_rag_summary_chain():
     prompt_template = """
-You are a legal expert AI summarizer. Based on the following legal context, generate a clear, structured case summary with markdown formatting. Your response must follow this format:
+    You are a meticulous legal analyst powered by an advanced AI. 
+    Analyze the provided legal context and produce a structured, professional summary in strict markdown format.
 
----
+    ---
+    ### 🛡️ **Case Overview**
+    - **Parties Involved**: [Identify Plaintiff vs Defendant]
+    - **Court & Jurisdiction**: [Court Name, Date, Judge if available]
+    
+    ### ⚖️ **Legal Analysis**
+    - **Key Issues**: [Bulleted list of main legal questions]
+    - **Verdict/Holding**: [Clear statement of the outcome]
+    - **Reasoning**: [Brief explanation of why the court decided this way]
 
-- 🧑‍⚖️ **Parties Involved**: ...
-- 🏛️ **Court Name & Jurisdiction**: ...
-- 📌 **Legal Issues Discussed**: ...
-- ⚖️ **Final Verdict or Judgment**: ...
-- 🗣️ **Plain English Summary**: ...
+    ### 📝 **Plain English Summary**
+    [A 2-3 sentence explanation for a non-lawyer]
+    ---
 
----
+    If specific details are missing, state "Not specified" clearly. Do not hallucinate.
 
-If any information is not available, write "Not specified" for that section.
+    Context:
+    {context}
 
-Context:
-{context}
-
-Question:
-{query}
-"""
+    Question/Focus:
+    {query}
+    """
 
     prompt = PromptTemplate(
         input_variables=["context", "query"],
         template=prompt_template,
     )
 
-    llm = get_llm()
+    # Use a lower temperature for factual summary
+    llm = get_llm(temperature=0.1)
 
     chain = (
         RunnableMap({
