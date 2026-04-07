@@ -79,7 +79,7 @@ export default function MyDocumentsPage() {
                                     </TableCell>
                                 </TableRow>
                             ) : (
-                                results.map((doc) => {
+                                results.map((doc: AnalysisResult) => {
                                     const status = doc.risk_score > 70 ? 'Critical' : doc.risk_score > 40 ? 'Review' : 'Safe';
                                     return (
                                         <TableRow key={doc.id}>

@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ShieldAlert, AlertTriangle, AlertCircle, FileText } from "lucide-react";
+import { AlertTriangle, FileText } from "lucide-react";
 
 export default function RiskAnalysisPage() {
     return (
