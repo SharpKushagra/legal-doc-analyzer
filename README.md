@@ -1,68 +1,51 @@
 # Legal Document Analyzer
 
-Upload a court case PDF and get:
+Upload a legal document (PDF) and receive an AI-powered analysis that extracts:
 - Parties Involved
-- Court Info
-- Legal Issue
-- Verdict
-- Summary (in simple English)
+- Jurisdiction / Court Info
+- Key Legal Issues
+- Verdict / Summary (in plain English)
+- High-priority Risks (e.g. Uncapped Liability, Missing Indemnification)
 
-🔧 Powered by LangChain + Free Local LLM (Ollama).
-
-
-here are some steps which are required to be done -
-
-1.Create virtual Environment 
-python -m venv venv
-source venv/bin/activate        # On macOS/Linux
-venv\Scripts\activate           # On Windows
-
-
-2.install all dependencies which can be found in requiremnts.txt 
-
-
-# Streamlit App
-streamlit>=1.30.0
-
-# PDF Text Extraction
-PyMuPDF==1.23.10
-
-# LangChain Core
-langchain>=0.2.0
-langchain-core>=0.1.45
-langchain-community>=0.2.0
-langchain-ollama>=0.1.0
-langchain-huggingface>=0.0.1
-
-# Embeddings & Vector Store
-chromadb==0.4.24
-sentence-transformers==2.2.2
-
-# LLM and RAG Model
-ollama>=0.1.0
-
-# Utility
-tqdm
-```
+🔧 **Powered by:** LangChain, FastAPI, Next.js, and Groq (Llama 3). 
+*Note: SQLite is used by default for local development.*
 
 ---
 
-## Current stack (Next.js + FastAPI + PostgreSQL)
+## 📋 Quick Setup (For Agents / Developers)
 
-- **Frontend**: Next.js (see `frontend/`) — login, signup, dashboard, document list, download reports.
-- **Backend**: FastAPI (`api.py`) — auth (JWT), analyze PDFs, store analyses in PostgreSQL.
-- **Database**: PostgreSQL for users and analyses.
+Clone, set up, and run the project locally with these steps:
 
-### Backend setup
+**1. Clone the Repository**
+```bash
+git clone https://github.com/SharpKushagra/legal-doc-analyzer.git
+cd legal-doc-analyzer
+```
 
-1. Create a PostgreSQL database, e.g. `legaldoc`.
-2. Copy `.env.example` to `.env` and set:
-   - `DATABASE_URL=postgresql://user:password@localhost:5432/legaldoc`
-   - `JWT_SECRET=<generate with: openssl rand -hex 32>`
-3. Install deps: `pip install -r requirements.txt`
-4. Run API: `python api.py` (creates tables on startup; serves on http://localhost:8000).
+**2. Set Up the Backend Environment**
+- Create and activate a new virtual environment:
+  - **Windows**: `python -m venv venv` and `venv\Scripts\activate`
+  - **Mac/Linux**: `python3 -m venv venv` and `source venv/bin/activate`
+- Install dependencies:
+  ```bash
+  pip install -r requirements.txt
+  ```
+- Environment Variables: 
+  Create a `.env` file in the root directory and ensure it has a valid Groq API Key:
+  `GROQ_API_KEY=your_key_here`
 
-### Frontend setup
+**3. Start the Backend API Server**
+- Run `python api.py` in the root directory. 
+- Ensure it successfully starts Uvicorn on `http://localhost:8000` or `0.0.0.0:8000`. Leave this running in the background.
 
-1. `cd frontend && npm install && npm run dev` — app at http://localhost:3000.
-2. Sign up or sign in, then upload PDFs and download analysis reports from the dashboard or My Documents.
+**4. Set Up & Start the Frontend**
+Open a second terminal window (keep the backend running) and execute:
+```bash
+cd frontend
+npm install
+npm run dev
+```
+- Ensure Next.js spins up properly on `http://localhost:3000`.
+
+**5. Verification**
+Confirm the application is functioning fully by opening `http://localhost:3000` in your browser. From there, you can sign up, log in, and begin uploading PDF documents for analysis.

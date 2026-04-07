@@ -30,3 +30,5 @@ huggingface-hub>=0.23.0
 
 # Utilities
 tqdm>=4.66.1
+pydantic[email]>=2.5.0
+streamlit>=1.30.0
