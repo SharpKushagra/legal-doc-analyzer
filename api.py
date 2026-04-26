@@ -9,8 +9,9 @@ import logging
 import re
 import json
 import io
-from typing import Dict, Any, List
-from pydantic import BaseModel, EmailStr
+from typing import Dict, Any, List, Literal
+from pydantic import BaseModel, EmailStr, Field
+from langchain_core.messages import BaseMessage, SystemMessage, HumanMessage, AIMessage
 from sqlalchemy.orm import Session
 
 # --- Database & Auth ---
@@ -28,7 +29,7 @@ from utils.pdf_loader import extract_text_from_pdf, extract_metadata
 from retriever.vector_store import create_vector_store_and_retriever
 from chains.rag_summary_chain import get_rag_summary_chain
 from chains.risk_assessment import get_risk_analysis_chain
-from langchain_core.documents import Document
+from models.llm import get_llm
 
 # Initialize Logger
 logging.basicConfig(level=logging.INFO)
@@ -139,6 +140,29 @@ class AnalysisResult(BaseModel):
     risk_score: int
     risks: List[Dict[str, Any]]
     created_at: str | None = None
+
+
+LEGAL_ASSISTANT_SYSTEM = """You are the in-app legal assistant for Clause Sense. Your role is to help users understand legal concepts, contract terms, litigation basics, compliance topics, and how to think about their uploaded documents at a general level.
+
+Rules:
+- Only engage with legal or legal-adjacent questions (contracts, courts, statutes, liability, IP, employment law, privacy, dispute resolution, legal definitions, due diligence checklists, etc.).
+- If the user asks something clearly unrelated to law (games, coding, recipes, personal chit-chat, math homework), politely refuse and invite them to ask a legal question instead. Do not answer the off-topic request.
+- You are not a licensed attorney. Do not give definitive "you must" instructions for their specific case. Give educational information and recommend consulting qualified local counsel for matters that depend on jurisdiction or specific facts.
+- Be concise unless the user asks for detail. Use plain language where possible."""
+
+
+class ChatHistoryItem(BaseModel):
+    role: Literal["user", "assistant"]
+    content: str
+
+
+class LegalChatRequest(BaseModel):
+    message: str = Field(..., min_length=1, max_length=8000)
+    history: List[ChatHistoryItem] = Field(default_factory=list)
+
+
+class LegalChatResponse(BaseModel):
+    reply: str
 
 
 # --- Auth Endpoints ---
@@ -341,6 +365,48 @@ def get_all_analyses(
             "critical": sum(1 for r in results if r["risk_score"] > 80),
         },
     }
+
+
+@app.post("/api/legal-chat", response_model=LegalChatResponse)
+def legal_chat(
+    body: LegalChatRequest,
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Legal Q&A using the same Groq-backed LLM configuration as document analysis (server GROQ_API_KEY).
+    """
+    _ = current_user  # require auth; no per-user model key
+    text = body.message.strip()
+    if not text:
+        raise HTTPException(status_code=400, detail="Message is required")
+
+    try:
+        llm = get_llm(model_name="llama-3.3-70b-versatile", temperature=0.2)
+    except ValueError as e:
+        logger.warning("Legal chat unavailable: %s", e)
+        raise HTTPException(
+            status_code=503,
+            detail="Legal assistant is not configured (missing GROQ_API_KEY on the server).",
+        )
+
+    lc_messages: List[BaseMessage] = [SystemMessage(content=LEGAL_ASSISTANT_SYSTEM)]
+    for item in body.history[-24:]:
+        if item.role == "user":
+            lc_messages.append(HumanMessage(content=item.content))
+        elif item.role == "assistant":
+            lc_messages.append(AIMessage(content=item.content))
+    lc_messages.append(HumanMessage(content=text))
+
+    try:
+        out = llm.invoke(lc_messages)
+        reply = out.content if hasattr(out, "content") else str(out)
+        if not reply or not str(reply).strip():
+            reply = "I could not generate a response. Please try rephrasing your legal question."
+    except Exception as e:
+        logger.error("legal_chat invoke failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Assistant request failed. Please try again.")
+
+    return LegalChatResponse(reply=str(reply).strip())
 
 
 @app.get("/api/analysis/{analysis_id}/download")

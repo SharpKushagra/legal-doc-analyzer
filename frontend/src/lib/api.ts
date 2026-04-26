@@ -42,7 +42,7 @@ export interface AnalysisResult {
     metadata: Record<string, any>;
     summary: any;
     risk_score: number;
-    risks: Array<{ severity: string; title: string; description: string }>;
+    risks: Array<{ severity: string; title: string; description: string; impact?: string }>;
     created_at?: string;
 }
 
@@ -75,6 +75,21 @@ export const getAnalysis = async (id: string) => {
 export const getAnalyses = async () => {
     const response = await api.get('/api/analyses');
     return response.data;
+};
+
+export type LegalChatRole = 'user' | 'assistant';
+
+/**
+ * Legal chat goes through the Next.js app at `/api/legal-chat`, which proxies to FastAPI.
+ * That avoids 404s when the browser was posting to the wrong host (e.g. only :3000 was reachable).
+ */
+export const sendLegalChat = async (message: string, history: Array<{ role: LegalChatRole; content: string }>) => {
+    if (typeof window === 'undefined') {
+        throw new Error('sendLegalChat is only available in the browser');
+    }
+    const url = `${window.location.origin}/api/legal-chat`;
+    const { data } = await api.post<{ reply: string }>(url, { message, history });
+    return data;
 };
 
 /** Get download URL for an analysis report (call in new tab or fetch and blob) */
